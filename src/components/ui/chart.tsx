@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
-import type { LegendProps } from "recharts"
 
 import { cn } from "@/lib/utils"
 
@@ -17,6 +16,16 @@ export type ChartConfig = {
     | { color?: string; theme?: never }
     | { color?: never; theme: Record<keyof typeof THEMES, string> }
   )
+}
+
+// Custom interface to replace RechartsPrimitive.Payload
+interface ChartPayload {
+  value?: number | string
+  name?: string
+  color?: string
+  dataKey?: string
+  payload?: Record<string, unknown>
+  [key: string]: unknown
 }
 
 type ChartContextProps = {
@@ -56,7 +65,7 @@ function ChartContainer({
         data-slot="chart"
         data-chart={chartId}
         className={cn(
-          "[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border flex aspect-video justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
+          "[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-rad/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border flex aspect-video justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
           className
         )}
         {...props}
@@ -121,28 +130,20 @@ function ChartTooltipContent({
   labelKey,
 }: {
   active?: boolean
-  payload?: Array<{
-    name?: string
-    value?: number | string
-    dataKey?: string
-    color?: string
-    payload?: any
-    fill?: string
-    [key: string]: any
-  }>
+  payload?: ChartPayload[]
   className?: string
   indicator?: "line" | "dot" | "dashed"
   hideLabel?: boolean
   hideIndicator?: boolean
   label?: React.ReactNode
-  labelFormatter?: (label: any, payload: any) => React.ReactNode
+  labelFormatter?: (label: string | number, payload: ChartPayload[]) => React.ReactNode
   labelClassName?: string
   formatter?: (
-    value: any,
-    name: any,
-    item: any,
+    value: number | string,
+    name: string,
+    item: ChartPayload,
     index: number,
-    payload: any
+    payload: ChartPayload[]
   ) => React.ReactNode
   color?: string
   nameKey?: string
@@ -164,9 +165,13 @@ function ChartTooltipContent({
         : itemConfig?.label
 
     if (labelFormatter) {
+      const safeValue =
+        typeof value === "string" || typeof value === "number"
+          ? value
+          : "";
       return (
         <div className={cn("font-medium", labelClassName)}>
-          {labelFormatter(value, payload)}
+          {labelFormatter(safeValue, payload)}
         </div>
       )
     }
@@ -204,7 +209,7 @@ function ChartTooltipContent({
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || "value"}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
-          const indicatorColor = color || item.payload.fill || item.color
+          const indicatorColor = color || item.payload?.fill || item.color
 
           return (
             <div
@@ -215,7 +220,7 @@ function ChartTooltipContent({
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                formatter(item.value, item.name, item, index, payload)
               ) : (
                 <>
                   {itemConfig?.icon ? (
@@ -279,7 +284,7 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentProps<"div"> & {
-  payload?: any[]
+  payload?: ChartPayload[]
   verticalAlign?: "top" | "bottom" | "middle"
   hideIcon?: boolean
   nameKey?: string
