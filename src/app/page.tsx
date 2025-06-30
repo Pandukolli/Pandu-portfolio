@@ -426,7 +426,7 @@ ${resumeData.education.school} (${resumeData.education.year})
                     Get In Touch
                   </h3>
                   <p className="text-black">
-                    Let's build something amazing together
+                    Let&apos; build something amazing together
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <Coffee className="w-4 h-4 text-black" />
