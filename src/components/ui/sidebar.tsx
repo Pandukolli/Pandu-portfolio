@@ -93,10 +93,13 @@ function SidebarProvider({
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [isMobile, setOpen, setOpenMobile]);
 
-  if (typeof window === "undefined") return; // Prevent execution on server
-
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
+    // Skip during SSR
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
@@ -112,7 +115,6 @@ function SidebarProvider({
   }, [toggleSidebar]);
 
   // We add a state so that we can do data-state="expanded" or "collapsed".
-  // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo<SidebarContextProps>(
